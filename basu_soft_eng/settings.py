@@ -25,9 +25,6 @@ SECRET_KEY = "django-insecure-_uz9l&vg-j&i5rp*9+0s&ycgcy&@$qfrqxsx&5$$@vhvog(!!r
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -56,7 +53,15 @@ MIDDLEWARE = [
 ]
 
 # CORS
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_WHITELIST = ["http://localhost:3000", "http://127.0.0.1:3000"]
+ALLOWED_HOSTS = ["*"]
+INTERNAL_IPS = [
+    "127.0.0.1",
+    "localhost",
+]
+CSRF_TRUSTED_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000"]
+
 
 ROOT_URLCONF = "basu_soft_eng.urls"
 
