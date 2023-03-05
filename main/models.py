@@ -11,8 +11,8 @@ class User(AbstractUser):
     student = "S"
 
     ROLE_CHOICES = (
-        (teacher, "استاد"),
-        (student, "دانشجو"),
+        (teacher, "teacher"),
+        (student, "student"),
     )
 
     role = models.CharField(

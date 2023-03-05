@@ -44,6 +44,7 @@ class TokenObtainPairSerializer(JWTTokenObtainPairSerializer):
         token["last_name"] = user.last_name
         token["phone_number"] = user.phone_number
         token["email"] = user.email
+        token["role"] = user.get_role_display()
 
         return token
 
