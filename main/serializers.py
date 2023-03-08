@@ -11,29 +11,46 @@ from rest_framework_simplejwt.serializers import (
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
-class SendVerificationCodeSerializer(serializers.Serializer):
+class LoginSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(required=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "username",
+            "password",
+        ]
+
+
+class RegisterSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(required=True)
+    last_name = serializers.CharField(required=True)
     phone_number = serializers.CharField(required=True)
+    email = serializers.EmailField(required=True)
+    ssn = serializers.CharField(required=True)
+    national_code = serializers.CharField(required=True)
+    password = serializers.CharField(required=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "username",
+            "first_name",
+            "last_name",
+            "phone_number",
+            "email",
+            "ssn",
+            "national_code",
+            "password",
+        ]
 
 
-class VerifyCodeSerializer(serializers.Serializer):
-    phone_number = serializers.CharField(required=True)
-    code = serializers.CharField(required=True, min_length=6, max_length=6)
-
-
-class VerifyCodeResponseSerializer(serializers.Serializer):
+class TokenSerializer(serializers.Serializer):
     token = serializers.CharField(max_length=500)
 
 
 class TokenObtainPairSerializer(JWTTokenObtainPairSerializer):
     token_class = RefreshToken
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # Change serializer field
-        del self.fields["username"]
-        del self.fields["password"]
-        self.fields["phone_number"] = serializers.CharField()
 
     # Override get_token for extra token claims
     @classmethod
@@ -51,7 +68,8 @@ class TokenObtainPairSerializer(JWTTokenObtainPairSerializer):
     # Override validate
     def validate(self, attrs):
         authenticate_kwargs = {
-            "phone_number": attrs["phone_number"],
+            "username": attrs["username"],
+            "password": attrs["password"],
         }
 
         try:
@@ -61,10 +79,8 @@ class TokenObtainPairSerializer(JWTTokenObtainPairSerializer):
 
         # Change authentication system
         try:
-            self.user = User.objects.get(
-                Q(email=authenticate_kwargs["phone_number"])
-                | Q(phone_number=authenticate_kwargs["phone_number"])
-            )
+            self.user = User.objects.get(username=authenticate_kwargs["username"])
+            self.user.check_password(authenticate_kwargs["password"])
         except User.DoesNotExist:
             raise NotAuthenticated
 
@@ -109,7 +125,9 @@ class ThesisSerializer(serializers.ModelSerializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     sender = serializers.SlugRelatedField(queryset=User.objects.all(), slug_field="ssn")
-    reciever = serializers.SlugRelatedField(queryset=User.objects.all(), slug_field="ssn")
+    reciever = serializers.SlugRelatedField(
+        queryset=User.objects.all(), slug_field="ssn"
+    )
 
     class Meta:
         model = Message

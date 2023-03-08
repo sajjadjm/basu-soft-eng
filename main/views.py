@@ -1,24 +1,16 @@
-import math
-import random
-from utils.redis import redis
 from django.db.models.expressions import Q
 from main.models import User, Thesis, Message
 from main.serializers import (
-    SendVerificationCodeSerializer,
     TokenObtainPairSerializer,
-    VerifyCodeResponseSerializer,
-    VerifyCodeSerializer,
+    LoginSerializer,
+    RegisterSerializer,
+    TokenSerializer,
     UserSerializer,
     ThesisSerializer,
     MessageSerializer,
 )
 from rest_framework.decorators import action
-from rest_framework.exceptions import (
-    NotAcceptable,
-    NotFound,
-    Throttled,
-    PermissionDenied,
-)
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import IsAuthenticated
@@ -29,70 +21,56 @@ class AuthViewSet(GenericViewSet):
 
     # Send verification code to user via email or phone
     @action(methods=["post"], detail=False)
-    def send_verification_code(self, request):
-        serializer = SendVerificationCodeSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        phone_number = serializer.validated_data.get("phone_number", None)
-
-        data = {}
-        data["phone_number"] = phone_number
-
-        # Get user if exists in database otherwise create a new user
-        try:
-            user = User.objects.get(**data)
-        except User.DoesNotExist:
-            data["username"] = phone_number
-            user = User.objects.create(**data)
-
-        if not user.is_active:
-            raise PermissionDenied(detail="حساب کاربری شما غیر فعال شده است")
-
-        # Checking otp expire time
-        if redis.get(f"user_{user.id}_otp"):
-            pttl = redis.pttl(f"user_{user.id}_otp")
-            remaining_time = math.ceil(pttl / 1000)
-            raise Throttled(detail=f"بعد از {remaining_time} ثانیه مجدداً تلاش کنید")
-
-        # Generate otp
-        code = str(random.randint(100000, 999999))
-        try:
-            print(code)
-            redis.set(f"user_{user.id}_otp", code, ex=120)
-            response = {"detail": "کد با موفقیت ارسال شد", "phone": phone_number}
-            return Response(response)
-
-        except User.DoesNotExist:
-            raise NotFound(detail="اطلاعات وارد شده اشتباه است")
-
-    # Verify otp
-    @action(methods=["post"], detail=False)
-    def verify_code(self, request):
-        serializer = VerifyCodeSerializer(data=request.data)
+    def login(self, request):
+        serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        # Checking the presence or absence of user
         try:
-            user = User.objects.get(phone_number=data["phone_number"])
+            user = User.objects.get(username=data["username"])
+
+            if not user.check_password(data["password"]):
+                raise PermissionDenied("نام کاربری و یا رمز عبور اشتباه است")
+
+            token = TokenObtainPairSerializer(data=data)
+            token.is_valid(raise_exception=True)
+            return Response(TokenSerializer(token.validated_data).data)
+        except (User.DoesNotExist):
+            raise PermissionDenied("نام کاربری و یا رمز عبور اشتباه است")
+
+    # Verify otp
+    @action(methods=["post"], detail=False)
+    def register(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        try:
+            User.objects.get(
+                Q(phone_number=data["phone_number"])
+                | Q(ssn=data["ssn"])
+                | Q(national_code=data["national_code"])
+            )
+            raise PermissionDenied("کاربر با این مشخصات از قبل ثبت شده است")
         except User.DoesNotExist:
-            raise NotFound("کاربر با این اطلاعات وجود ندارد")
+            user = User.objects.create(
+                username=data["username"],
+                first_name=data["first_name"],
+                last_name=data["last_name"],
+                phone_number=data["phone_number"],
+                email=data["email"],
+            )
+            user.set_password(data["password"])
+            user.save(update_fields=["password"])
 
-        # Checking otp expire time
-        code = redis.get(f"user_{user.id}_otp")
-        if code is None:
-            raise PermissionDenied("کد منقضی شده است")
-
-        # Checking otp value
-        if code.decode("utf-8") == data["code"]:
             token = TokenObtainPairSerializer(
                 data={
-                    "phone_number": data["phone_number"],
+                    "username": data["username"],
+                    "password": data["password"],
                 }
             )
             token.is_valid(raise_exception=True)
-            return Response(VerifyCodeResponseSerializer(token.validated_data).data)
-        else:
-            raise NotAcceptable("کد وارد شده صحیح نمی‌باشد")
+            return Response(TokenSerializer(token.validated_data).data)
 
 
 class RefreeViewSet(GenericViewSet, mixins.ListModelMixin):
@@ -130,6 +108,6 @@ class MessageViewSet(
 
     def get_queryset(self):
         return Message.objects.filter(reciever=self.request.user)
-    
+
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user)
