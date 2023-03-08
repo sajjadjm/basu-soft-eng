@@ -47,7 +47,8 @@ class AuthViewSet(GenericViewSet):
 
         try:
             User.objects.get(
-                Q(phone_number=data["phone_number"])
+                Q(national_code=data["username"])
+                | Q(phone_number=data["phone_number"])
                 | Q(ssn=data["ssn"])
                 | Q(national_code=data["national_code"])
             )

@@ -23,6 +23,7 @@ class LoginSerializer(serializers.ModelSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(required=True)
     first_name = serializers.CharField(required=True)
     last_name = serializers.CharField(required=True)
     phone_number = serializers.CharField(required=True)
