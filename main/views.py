@@ -79,6 +79,11 @@ class RefreeViewSet(GenericViewSet, mixins.ListModelMixin):
     serializer_class = UserSerializer
 
 
+class UserViewSet(GenericViewSet, mixins.ListModelMixin):
+    queryset = User.objects.filter(Q(role=User.teacher) | Q(role=User.student))
+    serializer_class = UserSerializer
+
+
 class ThesisViewSet(
     GenericViewSet,
     mixins.CreateModelMixin,
