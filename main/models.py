@@ -68,10 +68,16 @@ class Thesis(models.Model):
         related_name="student_thesises",
         verbose_name="دانشجو",
     )
-    refree = models.ForeignKey(
+    teacher = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name="teacher_thesises",
+        verbose_name="استاد",
+    )
+    refree = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="refree_thesises",
         verbose_name="داور",
     )
     title = models.TextField(

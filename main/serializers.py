@@ -117,15 +117,22 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class ThesisSerializer(serializers.ModelSerializer):
-    refree = serializers.SlugRelatedField(queryset=User.objects.all(), slug_field="ssn")
+    teacher = serializers.SlugRelatedField(
+        queryset=User.objects.all(),
+        slug_field="ssn",
+    )
+    refree = serializers.SlugRelatedField(
+        queryset=User.objects.all(),
+        slug_field="ssn",
+    )
 
     class Meta:
         model = Thesis
         fields = "__all__"
+        read_only_fields = ["user"]
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender = serializers.SlugRelatedField(queryset=User.objects.all(), slug_field="ssn")
     reciever = serializers.SlugRelatedField(
         queryset=User.objects.all(), slug_field="ssn"
     )
@@ -133,6 +140,4 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = "__all__"
-        read_only_fields = [
-            "sender",
-        ]
+        read_only_fields = ["sender"]

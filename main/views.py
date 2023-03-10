@@ -74,7 +74,7 @@ class AuthViewSet(GenericViewSet):
             return Response(TokenSerializer(token.validated_data).data)
 
 
-class RefreeViewSet(GenericViewSet, mixins.ListModelMixin):
+class TeacherViewSet(GenericViewSet, mixins.ListModelMixin):
     queryset = User.objects.filter(role=User.teacher)
     serializer_class = UserSerializer
 
@@ -96,7 +96,7 @@ class ThesisViewSet(
 
     def get_queryset(self):
         return Thesis.objects.filter(
-            Q(student=self.request.user) | Q(refree=self.request.user)
+            Q(student=self.request.user) | Q(refree=self.request.user) | Q(teacher=self.request.user)
         )
 
     def perform_create(self, serializer):
