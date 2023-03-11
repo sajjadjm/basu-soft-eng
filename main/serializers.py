@@ -129,17 +129,24 @@ class ThesisSerializer(serializers.ModelSerializer):
     class Meta:
         model = Thesis
         fields = "__all__"
-        read_only_fields = ["user"]
+        read_only_fields = ["student"]
+
+
+class ThesisResponseSerializer(serializers.ModelSerializer):
+    teacher = serializers.CharField(source="teacher.full_name")
+    refree = serializers.CharField(source="refree.full_name")
+    student = serializers.CharField(source="student.full_name")
+
+    class Meta:
+        model = Thesis
+        fields = "__all__"
 
 
 class MessageSerializer(serializers.ModelSerializer):
     reciever = serializers.SlugRelatedField(
         queryset=User.objects.all(), slug_field="ssn"
     )
-    sender = serializers.SerializerMethodField()
-
-    def get_sender(self, object):
-        return f"{object.sender.first_name} {object.sender.last_name}"
+    sender = serializers.CharField(source="sender.full_name")
 
     class Meta:
         model = Message

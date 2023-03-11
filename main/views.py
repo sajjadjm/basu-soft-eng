@@ -7,6 +7,7 @@ from main.serializers import (
     TokenSerializer,
     UserSerializer,
     ThesisSerializer,
+    ThesisResponseSerializer,
     MessageSerializer,
 )
 from rest_framework.decorators import action
@@ -98,6 +99,11 @@ class ThesisViewSet(
         return Thesis.objects.filter(
             Q(student=self.request.user) | Q(refree=self.request.user) | Q(teacher=self.request.user)
         )
+    
+    def get_serializer_class(self):
+        if self.action == "list":
+            return ThesisResponseSerializer
+        return ThesisSerializer
 
     def perform_create(self, serializer):
         serializer.save(student=self.request.user)
