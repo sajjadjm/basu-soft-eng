@@ -136,6 +136,10 @@ class MessageSerializer(serializers.ModelSerializer):
     reciever = serializers.SlugRelatedField(
         queryset=User.objects.all(), slug_field="ssn"
     )
+    sender = serializers.SerializerMethodField()
+
+    def get_sender(self, object):
+        return f"{object.sender.first_name} {object.sender.last_name}"
 
     class Meta:
         model = Message
